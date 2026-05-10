@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "endstone-jweconomy"
+version = "1.0.0"
+description = "Modern economy system for EndstoneMC survival servers with SQLite backend"
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "JWDev" }]
+requires-python = ">=3.12"
+dependencies = ["endstone>=0.10.0", "aiosqlite>=0.20.0", "pyyaml>=6.0"]
+
+[project.entry-points."endstone"]
+jweconomy = "jweconomy.main:JWEconomy"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+jweconomy = ["resources/*.yml"]
