@@ -34,7 +34,7 @@ class JWEconomy(Plugin):
 
     api_version = "0.11"
     prefix = "§6§l[JWEconomy]§r"
-    version = "1.0.0"
+    version = "1.0.1"
     description = "Modern economy system with SQLite backend, caching, and async operations."
     authors = ["JWDev"]
 
@@ -192,6 +192,9 @@ class JWEconomy(Plugin):
     @property
     def economy_service(self) -> EconomyService:
         return self._economy_service
+
+    def get_api(self) -> EconomyAPI:
+        return self._economy_api
 
     @property
     def economy_api(self) -> EconomyAPI:
