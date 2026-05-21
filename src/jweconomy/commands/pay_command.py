@@ -20,7 +20,7 @@ class PayCommandHandler:
             sender.send_message(self._plugin.message_formatter.format("player_only"))
             return True
         if len(args) < 2:
-            sender.send_message(self._plugin.message_formatter.format("usage_error", usage="/pay <player> <amount>"))
+            sender.send_message(self._plugin.message_formatter.format("usage_error", usage="/pay <player> <amount> [currency]"))
             return True
         target_name = args[0]
         try:
@@ -31,12 +31,27 @@ class PayCommandHandler:
         if amount <= 0:
             sender.send_message(self._plugin.message_formatter.format("pay_invalid_amount"))
             return True
-        self._process_payment(sender, target_name, amount)
+
+        service = self._plugin.economy_service
+        currency = service.default_currency
+        if len(args) >= 3:
+            currency_arg = args[2]
+            matched_currency = None
+            for c in service.currencies:
+                if c.lower() == currency_arg.lower():
+                    matched_currency = c
+                    break
+            if matched_currency is None:
+                sender.send_message(f"§cInvalid currency. Available: {', '.join(service.currencies)}")
+                return True
+            currency = matched_currency
+
+        self._process_payment(sender, target_name, amount, currency)
         return True
 
-    def _process_payment(self, sender: Player, target_name: str, amount: float) -> None:
+    def _process_payment(self, sender: Player, target_name: str, amount: float, currency: str) -> None:
         service = self._plugin.economy_service
-        symbol = service.currency_symbol
+        symbol = service.get_currency_symbol(currency)
         sender_uuid = str(sender.unique_id)
 
         async def task():
@@ -49,7 +64,7 @@ class PayCommandHandler:
                     self._plugin.server.scheduler.run_task(self._plugin, lambda: sender.send_message(self._plugin.message_formatter.format("pay_self")))
                     return
 
-                result = await service.transfer_balance(sender_uuid, target_uuid, amount)
+                result = await service.transfer_balance(sender_uuid, target_uuid, amount, currency)
                 def callback():
                     if not result.success:
                         sender.send_message(self._plugin.message_formatter.format("pay_insufficient"))
@@ -70,3 +85,4 @@ class PayCommandHandler:
                 self._plugin.logger.error(f"Error processing payment: {e}")
                 self._plugin.server.scheduler.run_task(self._plugin, lambda: sender.send_message(self._plugin.message_formatter.format("error_generic")))
         self._plugin.run_async(task())
+

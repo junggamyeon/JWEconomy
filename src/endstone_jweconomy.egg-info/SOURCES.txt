@@ -16,6 +16,7 @@ src/jweconomy/commands/__init__.py
 src/jweconomy/commands/balance_command.py
 src/jweconomy/commands/eco_command.py
 src/jweconomy/commands/pay_command.py
+src/jweconomy/commands/withdraw_command.py
 src/jweconomy/database/__init__.py
 src/jweconomy/database/database_manager.py
 src/jweconomy/database/schema.py

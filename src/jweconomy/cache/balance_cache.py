@@ -20,51 +20,56 @@ class CacheEntry:
 
 
 class BalanceCache:
-
-
     def __init__(self, max_size: int = 500, ttl_seconds: float = 300.0) -> None:
         self._max_size = max_size
         self._ttl = ttl_seconds
-        self._cache: OrderedDict[str, CacheEntry] = OrderedDict()
+        self._cache: OrderedDict[tuple[str, str], CacheEntry] = OrderedDict()
         self._lock = threading.Lock()
 
-    def get(self, uuid: str) -> float | None:
+    def get(self, uuid: str, currency: str) -> float | None:
+        key = (uuid, currency)
         with self._lock:
-            entry = self._cache.get(uuid)
+            entry = self._cache.get(key)
             if entry is None:
                 return None
             if self._is_expired(entry):
-                del self._cache[uuid]
+                del self._cache[key]
                 return None
-            self._cache.move_to_end(uuid)
+            self._cache.move_to_end(key)
             return entry.balance
 
-    def set(self, uuid: str, balance: float, dirty: bool = False) -> None:
+    def set(self, uuid: str, currency: str, balance: float, dirty: bool = False) -> None:
+        key = (uuid, currency)
         with self._lock:
-            if uuid in self._cache:
-                self._cache[uuid].balance = balance
-                self._cache[uuid].timestamp = time.monotonic()
+            if key in self._cache:
+                self._cache[key].balance = balance
+                self._cache[key].timestamp = time.monotonic()
                 if dirty:
-                    self._cache[uuid].dirty = True
-                self._cache.move_to_end(uuid)
+                    self._cache[key].dirty = True
+                self._cache.move_to_end(key)
             else:
-                self._cache[uuid] = CacheEntry(balance=balance, dirty=dirty, timestamp=time.monotonic())
+                self._cache[key] = CacheEntry(balance=balance, dirty=dirty, timestamp=time.monotonic())
                 self._evict_if_needed()
 
-    def invalidate(self, uuid: str) -> None:
+    def invalidate(self, uuid: str, currency: str | None = None) -> None:
         with self._lock:
-            self._cache.pop(uuid, None)
+            if currency is not None:
+                self._cache.pop((uuid, currency), None)
+            else:
+                keys_to_remove = [k for k in self._cache.keys() if k[0] == uuid]
+                for k in keys_to_remove:
+                    self._cache.pop(k, None)
 
     def invalidate_all(self) -> None:
         with self._lock:
             self._cache.clear()
 
-    def get_dirty_entries(self) -> list[tuple[str, float]]:
+    def get_dirty_entries(self) -> list[tuple[str, str, float]]:
         with self._lock:
             dirty = []
-            for uuid, entry in self._cache.items():
+            for (uuid, currency), entry in self._cache.items():
                 if entry.dirty:
-                    dirty.append((uuid, entry.balance))
+                    dirty.append((uuid, currency, entry.balance))
                     entry.dirty = False
             return dirty
 
@@ -83,3 +88,4 @@ class BalanceCache:
     def _evict_if_needed(self) -> None:
         while len(self._cache) > self._max_size:
             self._cache.popitem(last=False)
+

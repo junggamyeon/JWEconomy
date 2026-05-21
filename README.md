@@ -1,122 +1,132 @@
 # JWEconomy
 
-JWEconomy is a robust, lightweight, and highly performant economy plugin for Minecraft Bedrock, built specifically for the **Endstone API**. It provides server administrators with a fully-featured monetary system that is easy to manage, fast, and scalable. 
+JWEconomy is a robust, lightweight, and highly performant multi-currency economy plugin for Minecraft Bedrock, built specifically for the **Endstone Software**. 
 
-Whether you are running a small survival server or a massive network, JWEconomy provides the foundation you need for an engaging in-game economy.
+It provides server administrators with a fully-featured monetary system that is easy to manage, fast, and scalable, supporting everything from local SQLite databases to large MySQL/MariaDB networks.
+
+---
 
 ## 🌟 Key Features
 
-- **High-Performance SQLite Database:** Balances and transactions are stored using asynchronous SQLite (WAL mode) to ensure the server never lags, even during heavy transaction periods.
-- **Smart Memory Caching:** Player balances are cached in memory for instant retrieval, significantly reducing database read operations.
-- **Player-to-Player Transfers (`/pay`):** Players can seamlessly send currency to one another.
-- **Configurable Taxation:** Server owners can implement a tax percentage on all `/pay` transfers to act as an economy money sink and combat inflation.
-- **Top Balance Leaderboard (`/eco top`):** A competitive ranking system that shows the richest players on the server.
-- **Full Localization Support:** Every single message, including the currency symbol and format, can be customized in the `messages.yml` file.
-- **Developer-Friendly API:** Built with an asynchronous API, making it incredibly easy for other plugins (like Shops or Auction Houses) to hook into and use the economy.
+- **Multi-Currency System:** Create and manage custom currencies (Coins, Gems, Tokens, etc.) effortlessly.
+- **Physical Bank Notes (`/withdraw`):** Players can withdraw their digital balance into a physical item (like a Paper note or Emerald voucher) and trade it safely. Right-click to redeem!
+- **High-Performance Database:** Supports local **SQLite** (WAL mode) and remote **MariaDB/MySQL** connection pools.
+- **Data Import Tools:** Easily migrate your data from other plugins using `/eco import mysql` or `/eco import sqlite`.
+- **Smart Memory Caching:** Balances are cached in memory for instant retrieval, preventing server lag.
+- **Configurable Taxation:** Combat inflation by applying a tax percentage on player-to-player transfers (`/pay`).
+- **Leaderboards (`/eco top`):** Competitive ranking system showing the richest players for each currency.
+- **100% Customizable:** Every message, currency symbol, and format can be changed in `messages.yml`.
 
 ---
 
 ## 🛠️ Commands & Permissions
 
-| Command | Permission Node | Description |
+*Note: `[currency]` is always optional. If you don't type it, the plugin uses the default currency (e.g., `coins`).*
+
+| Command | Permission | Description |
 |---|---|---|
-| `/balance [player]` | `jweconomy.command.balance` | Check your own balance or the balance of another player. |
-| `/pay <player> <amount>` | `jweconomy.command.pay` | Transfer money from your account to another player. |
-| `/eco top` | `jweconomy.command.eco` | View the top richest players on the server. |
-| `/eco give <player> <amount>`| `jweconomy.command.eco` | **(Admin)** Add money to a player's balance. |
-| `/eco take <player> <amount>`| `jweconomy.command.eco` | **(Admin)** Deduct money from a player's balance. |
-| `/eco set <player> <amount>` | `jweconomy.command.eco` | **(Admin)** Set a player's balance to an exact amount. |
-| `/eco reload` | `jweconomy.command.eco` | **(Admin)** Reload the configuration and message files. |
-
-*Note: Admin commands work on players even if they are offline, using robust UUID tracking.*
-
----
-
-## ⚙️ Configuration (`config.yml`)
-
-When you first run the plugin, a `config.yml` file is generated in the plugin's data folder. 
-
-```yaml
-database:
-  filename: jweconomy.db # The SQLite database file name.
-
-economy:
-  starting_balance: 1000.0 # How much money new players start with.
-  currency_symbol: "$" # The symbol displayed before/after amounts.
-  currency_name: "Coins" # The name of the currency.
-  currency_name_plural: "Coins" # Plural name of the currency.
-  max_balance: 1000000000.0 # The maximum allowed balance.
-  min_transaction: 0.01 # Minimum amount that can be transferred.
-  transfer_tax_percent: 5.0 # Tax percentage (0-100) applied to /pay. Example: 5% tax.
-  top_entries_per_page: 10 # How many players to show per page in /eco top.
-```
+| `/balance [player] [currency]` | `jweconomy.command.balance` | Check your own balance or someone else's. |
+| `/pay <player> <amount> [currency]` | `jweconomy.command.pay` | Transfer money to another player. |
+| `/withdraw <amount> [currency]` | `jweconomy.command.withdraw` | Withdraw your digital balance into a physical item. |
+| `/eco top [page] [currency]` | `jweconomy.command.eco` | View the richest players leaderboard. |
+| `/eco give <player> <amount> [curr]`| `jweconomy.admin` | **(Admin)** Add money to a player. |
+| `/eco take <player> <amount> [curr]`| `jweconomy.admin` | **(Admin)** Deduct money from a player. |
+| `/eco set <player> <amount> [curr]` | `jweconomy.admin` | **(Admin)** Set a player's balance to an exact amount. |
+| `/eco reload` | `jweconomy.admin` | **(Admin)** Reload the config and messages files. |
+| `/eco import mysql <host>...` | `jweconomy.admin` | **(Admin)** Import data from a MySQL database. |
+| `/eco import sqlite <file_path>` | `jweconomy.admin` | **(Admin)** Import data from an SQLite file. |
 
 ---
 
-## 💻 Developer API
+## 💻 Developer API (For Plugin Creators)
 
-JWEconomy exposes a robust asynchronous API for other developers to integrate economy features into their own plugins (such as Shops, Markets, etc.).
+JWEconomy exposes a robust API for developers to integrate the economy into their own plugins (e.g., Shops, Auction Houses, Kits).
 
-### 1. Getting the API Instance
+### ⚠️ Understanding Asynchronous Calls
+Endstone API is generally **synchronous** (runs on the main thread). However, JWEconomy uses an **asynchronous** database to prevent lag. 
+This means **you cannot call `api.add_balance()` directly inside a command or event**. You must create an `async def` function and run it using JWEconomy's async thread.
+
+### 📖 Step-by-Step Example (A Simple Shop Plugin)
+
+Here is a complete, copy-pasteable example of how to hook into JWEconomy safely:
+
 ```python
-economy_plugin = self.server.plugin_manager.get_plugin("jweconomy")
-if not economy_plugin:
-    self.logger.error("JWEconomy is not installed!")
-    return
+from endstone.plugin import Plugin
+from endstone.command import CommandSender, Command
+from endstone import Player
+from endstone.inventory import ItemStack
 
-# Get the API instance
-api = economy_plugin.get_api()
+class MyShopPlugin(Plugin):
+    prefix = "MyShop"
+    api_version = "0.10"
+
+    commands = {
+        "buyapple": {
+            "description": "Buy an apple for 50 coins",
+            "usages": ["/buyapple"]
+        }
+    }
+
+    def on_command(self, sender: CommandSender, command: Command, args: list[str]) -> bool:
+        if not isinstance(sender, Player):
+            return False
+
+        # 1. Get the JWEconomy Plugin & API
+        jweco = self.server.plugin_manager.get_plugin("jweconomy")
+        if not jweco:
+            sender.send_message("§cJWEconomy is not installed!")
+            return True
+            
+        api = jweco.get_api()
+        player_uuid = str(sender.unique_id)
+        price = 50.0
+        currency = "coins" # Optional: leave as None to use default
+
+        # 2. Define your asynchronous task
+        async def process_purchase():
+            try:
+                # Check if player has enough money
+                has_money = await api.has_balance(player_uuid, price, currency)
+                
+                if not has_money:
+                    # IMPORTANT: Use scheduler to send messages/modify inventory on the main thread!
+                    self.server.scheduler.run_task(self, lambda: sender.send_message("§cYou don't have enough coins!"))
+                    return
+
+                # Deduct the money
+                await api.remove_balance(player_uuid, price, currency)
+
+                # Give the item (Must be on the main thread)
+                def give_item():
+                    sender.inventory.add_item(ItemStack("minecraft:apple"))
+                    sender.send_message("§aYou bought an Apple for 50 coins!")
+                
+                self.server.scheduler.run_task(self, give_item)
+
+            except Exception as e:
+                self.logger.error(f"Transaction error: {e}")
+
+        # 3. Run the async task using JWEconomy's built-in async loop
+        jweco.run_async(process_purchase())
+        
+        return True
 ```
 
-### 2. Using the API Methods
+### 📚 Available API Methods
 
-**Important:** Because JWEconomy uses an asynchronous database, all API methods are `async`. You must `await` them inside an asynchronous context.
+All methods are `async` and must be `await`ed inside an async function. They all accept an optional `currency: str` argument. If omitted, it uses the server's default currency.
 
-#### Check a Player's Balance
-```python
-# Returns a float representing the player's balance
-balance = await api.get_balance(player_uuid)
-```
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `await api.get_balance(uuid, [currency])` | Get a player's balance. | `float` |
+| `await api.has_balance(uuid, amount, [currency])` | Check if player has at least `amount`. | `bool` |
+| `await api.add_balance(uuid, amount, [currency])` | Add money to player. | `float` (new balance) |
+| `await api.remove_balance(uuid, amount, [currency])` | Remove money from player. | `float` (new balance) or `None` if insufficient. |
+| `await api.set_balance(uuid, amount, [currency])` | Set exact balance. | `float` (new balance) |
+| `await api.transfer_balance(sender_uuid, receiver_uuid, amount, [currency])` | Safely transfer money (applies taxes). | `TransferResult` object |
 
-#### Check if a Player has Enough Money
-```python
-# Returns True if the player has at least 500 coins, False otherwise
-if await api.has_balance(player_uuid, 500.0):
-    print("Player has enough money!")
-```
-
-#### Add to a Player's Balance
-```python
-# Adds 100 to the balance and returns the new total balance
-new_balance = await api.add_balance(player_uuid, 100.0)
-```
-
-#### Remove from a Player's Balance
-```python
-# Removes 50 from the balance. Returns the new balance, or None if the player doesn't have enough.
-new_balance = await api.remove_balance(player_uuid, 50.0)
-```
-
-#### Set a Player's Exact Balance
-```python
-# Overwrites the balance to exactly 1000
-new_balance = await api.set_balance(player_uuid, 1000.0)
-```
-
-#### Transfer Money Between Players
-```python
-# Safely transfers 200 from sender to receiver, applying any configured taxes.
-result = await api.transfer_balance(sender_uuid, receiver_uuid, 200.0)
-
-if result.success:
-    print(f"Transferred! Sender new balance: {result.sender_new_balance}")
-    print(f"Tax paid to server: {result.tax_amount}")
-else:
-    print(f"Transfer failed: {result.error}")
-```
-
-#### Get Currency Formatting
-```python
-symbol = api.currency_symbol # e.g. "$"
-name = api.currency_name # e.g. "Coins"
-```
+**Utility (Synchronous) Methods:**
+You can call these directly anywhere without `async/await`.
+- `api.get_currency_symbol("gems")` -> Returns `"💎"`
+- `api.get_currency_name("coins")` -> Returns `"Coins"`
+- `api.get_currency_name_plural("coins")` -> Returns `"Coins"`

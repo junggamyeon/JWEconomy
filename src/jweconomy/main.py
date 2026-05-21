@@ -15,6 +15,7 @@ from jweconomy.cache.balance_cache import BalanceCache
 from jweconomy.commands.balance_command import BalanceCommandHandler
 from jweconomy.commands.eco_command import EcoCommandHandler
 from jweconomy.commands.pay_command import PayCommandHandler
+from jweconomy.commands.withdraw_command import WithdrawCommandHandler
 from jweconomy.database.database_manager import DatabaseManager
 from jweconomy.database.repositories.balance_repository import BalanceRepository
 from jweconomy.database.repositories.profile_repository import ProfileRepository
@@ -34,30 +35,52 @@ class JWEconomy(Plugin):
 
     api_version = "0.11"
     prefix = "§6§l[JWEconomy]§r"
-    version = "1.0.1"
+    version = "2.0.0"
     description = "Modern economy system with SQLite backend, caching, and async operations."
     authors = ["JWDev"]
 
     commands = {
         "balance": {
             "description": "Check your balance or another player's balance",
-            "usages": ["/balance", "/balance <player: string>"],
+            "usages": [
+                "/balance",
+                "/balance <player: string>",
+                "/balance <player: string> <currency: string>"
+            ],
             "aliases": ["bal", "money"],
         },
         "pay": {
             "description": "Pay another player",
-            "usages": ["/pay <player: string> <amount: float>"],
+            "usages": [
+                "/pay <player: string> <amount: float>",
+                "/pay <player: string> <amount: float> <currency: string>"
+            ],
         },
         "eco": {
             "description": "Economy admin commands",
             "usages": [
                 "/eco give <player: string> <amount: float>",
+                "/eco give <player: string> <amount: float> <currency: string>",
                 "/eco take <player: string> <amount: float>",
+                "/eco take <player: string> <amount: float> <currency: string>",
                 "/eco set <player: string> <amount: float>",
+                "/eco set <player: string> <amount: float> <currency: string>",
                 "/eco top",
+                "/eco top <page: int>",
+                "/eco top <currency: string>",
+                "/eco top <page: int> <currency: string>",
                 "/eco reload",
+                "/eco import mysql <host: string> <port: int> <database: string> <username: string> <password: string>",
+                "/eco import sqlite <file_path: string>",
             ],
             "permissions": ["jweconomy.admin"],
+        },
+        "withdraw": {
+            "description": "Withdraw money into a physical bank note",
+            "usages": [
+                "/withdraw <amount: float>",
+                "/withdraw <amount: float> <currency: string>"
+            ],
         },
     }
 
@@ -85,8 +108,7 @@ class JWEconomy(Plugin):
         self._config_loader.load_all()
         self._message_formatter = MessageFormatter(self._config_loader.messages)
 
-        db_path = os.path.join(self.data_folder, self._config_loader.database_config.get("filename", "jweconomy.db"))
-        self._db_manager = DatabaseManager(db_path, self.logger)
+        self._db_manager = DatabaseManager(self._config_loader.database_config, str(self.data_folder), self.logger)
         
         self._balance_cache = BalanceCache(
             max_size=self._config_loader.economy_config.get("cache_max_size", 500),
@@ -121,6 +143,7 @@ class JWEconomy(Plugin):
         self._cmd_balance = BalanceCommandHandler(self)
         self._cmd_pay = PayCommandHandler(self)
         self._cmd_eco = EcoCommandHandler(self)
+        self._cmd_withdraw = WithdrawCommandHandler(self)
 
         self.register_events(PlayerListener(self))
 
@@ -152,6 +175,8 @@ class JWEconomy(Plugin):
             return self._cmd_pay.handle(sender, args)
         elif cmd_name == "eco":
             return self._cmd_eco.handle(sender, args)
+        elif cmd_name == "withdraw":
+            return self._cmd_withdraw.handle(sender, args)
         return False
 
     def run_async(self, coro: Any) -> Future:
@@ -179,7 +204,7 @@ class JWEconomy(Plugin):
     async def _initialize_database(self) -> None:
         await self._db_manager.connect()
         schema_manager = SchemaManager(self._db_manager, self.logger)
-        await schema_manager.create_tables()
+        await schema_manager.create_tables(self._config_loader.economy_config.get("default_currency", "coins"))
 
     def _flush_cache_task(self) -> None:
         if hasattr(self, "_economy_service"):

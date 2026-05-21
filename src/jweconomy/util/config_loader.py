@@ -12,15 +12,57 @@ if TYPE_CHECKING:
 
 _DEFAULT_CONFIG = {
     "database": {
+        "type": "sqlite",  # sqlite or mysql
         "filename": "jweconomy.db",
+        "mysql": {
+            "host": "localhost",
+            "port": 3306,
+            "database": "jweconomy",
+            "username": "root",
+            "password": "",
+            "pool_min_size": 1,
+            "pool_max_size": 10,
+        },
     },
     "economy": {
-        "starting_balance": 1000.0,
-        "currency_symbol": "$",
-        "currency_name": "Coins",
-        "currency_name_plural": "Coins",
-        "max_balance": 1_000_000_000.0,
+        "default_currency": "coins",
+        "currencies": {
+            "coins": {
+                "starting_balance": 1000.0,
+                "currency_symbol": "$",
+                "currency_name": "Coins",
+                "currency_name_plural": "Coins",
+                "max_balance": 1_000_000_000.0,
+                "is_withdrawable": True,
+                "withdraw_material": "minecraft:paper",
+                "withdraw_name": "§aBank Note",
+                "withdraw_lore": [
+                    "§7Signer: §f%player%",
+                    "§7Value: §e%amount%",
+                    "",
+                    "§eRight-click to redeem"
+                ]
+            },
+            "gems": {
+                "starting_balance": 10.0,
+                "currency_symbol": "💎",
+                "currency_name": "Gem",
+                "currency_name_plural": "Gems",
+                "max_balance": 1_000_000.0,
+                "is_withdrawable": True,
+                "withdraw_material": "minecraft:emerald",
+                "withdraw_name": "§bGem Voucher",
+                "withdraw_lore": [
+                    "§7Signer: §f%player%",
+                    "§7Value: §b%amount%",
+                    "",
+                    "§bRight-click to redeem"
+                ]
+            },
+        },
         "min_transaction": 0.01,
+        "min_withdraw": 1.0,
+        "max_withdraw": 1000000.0,
         "transfer_tax_percent": 0.0,
         "top_entries_per_page": 10,
         "cache_max_size": 500,
@@ -51,6 +93,10 @@ _DEFAULT_MESSAGES = {
     "player_only": "{prefix}This command can only be used by players.",
     "usage_error": "{prefix}Usage: {usage}",
     "error_generic": "{prefix}An internal error occurred. Please try again later.",
+    "withdraw_success": "{prefix}You withdrew {amount} ({currency}) into a note.",
+    "withdraw_disabled": "{prefix}Withdrawing this currency is disabled.",
+    "withdraw_limit": "{prefix}Withdraw amount must be between {min} and {max}.",
+    "withdraw_redeem": "{prefix}You redeemed a note worth {amount} ({currency}).",
 }
 
 
