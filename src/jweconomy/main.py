@@ -38,6 +38,7 @@ class JWEconomy(Plugin):
     version = "2.0.0"
     description = "Modern economy system with SQLite backend, caching, and async operations."
     authors = ["JWDev"]
+    soft_depend = ["jwplaceholderapi"]
 
     commands = {
         "balance": {
@@ -146,6 +147,16 @@ class JWEconomy(Plugin):
         self._cmd_withdraw = WithdrawCommandHandler(self)
 
         self.register_events(PlayerListener(self))
+
+        # Register JWPlaceholderAPI expansion
+        papi = self.server.plugin_manager.get_plugin("jwplaceholderapi")
+        if papi:
+            from jweconomy.jweconomy_expansion import JWEconomyExpansion
+            try:
+                papi.register_expansion(JWEconomyExpansion(self))
+                self.logger.info("Registered PlaceholderAPI expansion successfully.")
+            except Exception as e:
+                self.logger.warning(f"Failed to register PlaceholderAPI expansion: {e}")
 
         # Schedule cache flush task (every 60 seconds)
         self.server.scheduler.run_task(self, self._flush_cache_task, delay=1200, period=1200)
