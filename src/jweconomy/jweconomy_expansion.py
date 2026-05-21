@@ -3,7 +3,7 @@ from endstone import Player
 import asyncio
 
 try:
-    from placeholder_api.expansion import PlaceholderExpansion
+    from jwplaceholderapi.expansion import PlaceholderExpansion
 except ImportError:
     PlaceholderExpansion = object # Fallback if not installed
 
