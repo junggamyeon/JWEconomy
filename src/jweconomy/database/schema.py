@@ -49,7 +49,7 @@ class SchemaManager:
                 needs_migration = True
 
         if needs_migration:
-            self._logger.info("Migrating SQLite balances table to support multi-currency...")
+            self._logger.debug("Migrating SQLite balances table to support multi-currency...")
             await self._db.executescript("""
                 ALTER TABLE balances RENAME TO balances_old;
                 
@@ -66,7 +66,7 @@ class SchemaManager:
                 
                 DROP TABLE balances_old;
             """, (default_currency,))
-            self._logger.info("SQLite balances migration completed successfully.")
+            self._logger.debug("SQLite balances migration completed successfully.")
         else:
             await self._db.executescript("""
                 CREATE TABLE IF NOT EXISTS balances (
@@ -89,7 +89,7 @@ class SchemaManager:
             columns = await self._db.fetchall("PRAGMA table_info(transactions)")
             has_currency = any(col["name"] == "currency" for col in columns)
             if not has_currency:
-                self._logger.info("Adding currency column to transactions table...")
+                self._logger.debug("Adding currency column to transactions table...")
                 await self._db.execute(
                     f"ALTER TABLE transactions ADD COLUMN currency TEXT NOT NULL DEFAULT '{default_currency}'"
                 )
@@ -146,7 +146,7 @@ class SchemaManager:
                 needs_migration = True
 
         if needs_migration:
-            self._logger.info("Migrating MySQL balances table to support multi-currency...")
+            self._logger.debug("Migrating MySQL balances table to support multi-currency...")
             await self._db.executescript(f"""
                 RENAME TABLE balances TO balances_old;
                 
@@ -164,7 +164,7 @@ class SchemaManager:
                 
                 DROP TABLE balances_old;
             """)
-            self._logger.info("MySQL balances migration completed successfully.")
+            self._logger.debug("MySQL balances migration completed successfully.")
         else:
             await self._db.executescript("""
                 CREATE TABLE IF NOT EXISTS balances (
@@ -189,7 +189,7 @@ class SchemaManager:
                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'transactions' AND COLUMN_NAME = 'currency'
             """)
             if not has_currency:
-                self._logger.info("Adding currency column to MySQL transactions table...")
+                self._logger.debug("Adding currency column to MySQL transactions table...")
                 await self._db.execute(
                     f"ALTER TABLE transactions ADD COLUMN currency VARCHAR(32) NOT NULL DEFAULT '{default_currency}'"
                 )

@@ -154,7 +154,6 @@ class JWEconomy(Plugin):
             from jweconomy.jweconomy_expansion import JWEconomyExpansion
             try:
                 papi.register_expansion(JWEconomyExpansion(self))
-                self.logger.info("Registered PlaceholderAPI expansion successfully.")
             except Exception as e:
                 self.logger.warning(f"Failed to register PlaceholderAPI expansion: {e}")
 

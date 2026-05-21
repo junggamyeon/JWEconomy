@@ -116,7 +116,7 @@ class DatabaseManager:
                     cursorclass=aiomysql.DictCursor,
                 )
                 if self._logger:
-                    self._logger.info("Connected to MySQL/MariaDB database pool.")
+                    self._logger.debug("Connected to MySQL/MariaDB database pool.")
             except Exception as e:
                 if self._logger:
                     self._logger.error(f"Failed to connect to MySQL database: {e}")
@@ -132,7 +132,7 @@ class DatabaseManager:
                 await self._db.execute("PRAGMA foreign_keys=ON")
                 await self._db.execute("PRAGMA busy_timeout=5000")
                 if self._logger:
-                    self._logger.info(f"Connected to SQLite database: {db_path}")
+                    self._logger.debug(f"Connected to SQLite database: {db_path}")
             except Exception as e:
                 if self._logger:
                     self._logger.error(f"Failed to open SQLite database: {e}")
