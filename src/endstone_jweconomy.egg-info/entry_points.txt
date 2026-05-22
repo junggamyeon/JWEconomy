@@ -1,2 +1,0 @@
-[endstone]
-jweconomy = jweconomy.main:JWEconomy
