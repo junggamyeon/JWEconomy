@@ -50,7 +50,7 @@ class SchemaManager:
 
         if needs_migration:
             self._logger.debug("Migrating SQLite balances table to support multi-currency...")
-            await self._db.executescript("""
+            await self._db.executescript(f"""
                 ALTER TABLE balances RENAME TO balances_old;
                 
                 CREATE TABLE balances (
@@ -62,10 +62,10 @@ class SchemaManager:
                 );
                 
                 INSERT INTO balances (uuid, currency, balance, updated_at)
-                SELECT uuid, ?, balance, updated_at FROM balances_old;
+                SELECT uuid, '{default_currency}', balance, updated_at FROM balances_old;
                 
                 DROP TABLE balances_old;
-            """, (default_currency,))
+            """)
             self._logger.debug("SQLite balances migration completed successfully.")
         else:
             await self._db.executescript("""

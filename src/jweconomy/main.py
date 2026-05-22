@@ -35,7 +35,7 @@ class JWEconomy(Plugin):
 
     api_version = "0.11"
     prefix = "§6§l[JWEconomy]§r"
-    version = "2.0.0"
+    version = "2.0.3"
     description = "Modern economy system with SQLite backend, caching, and async operations."
     authors = ["JWDev"]
     soft_depend = ["jwplaceholderapi"]
@@ -44,43 +44,32 @@ class JWEconomy(Plugin):
         "balance": {
             "description": "Check your balance or another player's balance",
             "usages": [
-                "/balance",
-                "/balance <player: string>",
-                "/balance <player: string> <currency: string>"
+                "/balance [player: string] [currency: string]"
             ],
             "aliases": ["bal", "money"],
         },
         "pay": {
             "description": "Pay another player",
             "usages": [
-                "/pay <player: string> <amount: float>",
-                "/pay <player: string> <amount: float> <currency: string>"
+                "/pay <player: string> <amount: float> [currency: string]"
             ],
         },
         "eco": {
             "description": "Economy admin commands",
             "usages": [
-                "/eco give <player: string> <amount: float>",
-                "/eco give <player: string> <amount: float> <currency: string>",
-                "/eco take <player: string> <amount: float>",
-                "/eco take <player: string> <amount: float> <currency: string>",
-                "/eco set <player: string> <amount: float>",
-                "/eco set <player: string> <amount: float> <currency: string>",
-                "/eco top",
-                "/eco top <page: int>",
-                "/eco top <currency: string>",
-                "/eco top <page: int> <currency: string>",
+                "/eco give <player: string> <amount: float> [currency: string]",
+                "/eco take <player: string> <amount: float> [currency: string]",
+                "/eco set <player: string> <amount: float> [currency: string]",
+                "/eco top [page_or_currency: string] [currency: string]",
                 "/eco reload",
-                "/eco import mysql <host: string> <port: int> <database: string> <username: string> <password: string>",
-                "/eco import sqlite <file_path: string>",
+                "/eco import <db_type: string> [file_or_host: string] [port: int] [database: string] [username: string] [password: string]"
             ],
             "permissions": ["jweconomy.admin"],
         },
         "withdraw": {
             "description": "Withdraw money into a physical bank note",
             "usages": [
-                "/withdraw <amount: float>",
-                "/withdraw <amount: float> <currency: string>"
+                "/withdraw <amount: float> [currency: string]"
             ],
         },
     }

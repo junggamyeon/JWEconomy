@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "endstone-jweconomy"
-version = "2.0.0"
+version = "2.0.3"
 description = "Modern economy system for EndstoneMC survival servers with SQLite backend"
 readme = "README.md"
 license = "MIT"
